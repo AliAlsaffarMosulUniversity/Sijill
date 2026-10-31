@@ -1,0 +1,9 @@
+{
+  "checks": 18,
+  "rows": 10,
+  "modelsLoaded": true,
+  "actualBlankImageInference": true,
+  "notes": "Synthetic descriptor and decision-path tests, not participant accuracy or camera PAD evaluation",
+  "externalRequests": [],
+  "pageErrors": []
+}
