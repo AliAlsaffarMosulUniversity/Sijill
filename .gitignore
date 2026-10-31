@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+work/
+data/
+backups/
+*backup*.json
+sijill_research*.csv
+sijill_liveness_log*.csv
+*.jpg
+*.jpeg
+*.png
+*.mp4
+*.webm

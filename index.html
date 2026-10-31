@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سجلّ | نظام تسجيل الحضور بالتعرف على الوجه</title>
+<script src="vendor/face-api.min.js"></script>
+<style>
+  :root{
+    --navy:#1E2761; --navy-dark:#141B4D; --ice:#CADCFC; --ice-light:#EEF3FC;
+    --teal:#00B8A9; --teal-dark:#00968A; --white:#FFFFFF; --gray:#6B7280;
+    --danger:#C0392B; --danger-bg:#FDEEEE; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Segoe UI', Tahoma, Arial, sans-serif; background:var(--ice-light);
+    color:var(--navy); direction:rtl;
+  }
+  header{
+    background:linear-gradient(135deg, var(--navy-dark), var(--navy));
+    color:#fff; padding:18px 28px; display:flex; align-items:center; justify-content:space-between;
+    box-shadow:0 2px 10px rgba(0,0,0,.15);
+  }
+  header .brand{display:flex; align-items:center; gap:12px;}
+  header .brand .logo{
+    width:42px; height:42px; border-radius:50%; background:var(--teal);
+    display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:18px;
+  }
+  header h1{font-size:20px; margin:0;}
+  header .sub{font-size:12px; color:var(--ice); margin-top:2px;}
+  nav.tabs{
+    display:flex; gap:8px; padding:14px 28px; background:#fff; border-bottom:1px solid #e2e8f0;
+    position:sticky; top:0; z-index:10; flex-wrap:wrap;
+  }
+  nav.tabs button{
+    border:none; background:var(--ice-light); color:var(--navy); padding:10px 18px; border-radius:999px;
+    font-size:14px; font-weight:bold; cursor:pointer; transition:.15s;
+  }
+  nav.tabs button.active{background:var(--navy); color:#fff;}
+  nav.tabs button:hover{background:var(--teal); color:#fff;}
+  main{padding:24px 28px; max-width:1200px; margin:0 auto;}
+  .panel{display:none;}
+  .panel.active{display:block; animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+  .card{
+    background:#fff; border-radius:var(--radius); padding:22px; box-shadow:0 2px 14px rgba(30,39,97,.08);
+    margin-bottom:20px;
+  }
+  .card h2{margin-top:0; font-size:18px; display:flex; align-items:center; gap:10px;}
+  .card h2 .dot{width:10px; height:10px; border-radius:50%; background:var(--teal); display:inline-block;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+  @media (max-width:850px){.grid2{grid-template-columns:1fr;}}
+  label{display:block; font-size:13px; font-weight:bold; margin:10px 0 6px;}
+  input[type=text], input[type=number], input[type=date], select{
+    width:100%; padding:10px 12px; border:1.5px solid #dbe3f0; border-radius:8px; font-size:14px;
+    font-family:inherit; background:#fbfcff;
+  }
+  input:focus, select:focus{outline:none; border-color:var(--teal);}
+  .btn{
+    border:none; padding:11px 20px; border-radius:8px; font-weight:bold; font-size:14px; cursor:pointer;
+    transition:.15s; display:inline-flex; align-items:center; gap:8px;
+  }
+  .btn-primary{background:var(--teal); color:#fff;}
+  .btn-primary:hover{background:var(--teal-dark);}
+  .btn-navy{background:var(--navy); color:#fff;}
+  .btn-navy:hover{background:var(--navy-dark);}
+  .btn-outline{background:#fff; color:var(--navy); border:1.5px solid var(--navy);}
+  .btn-outline:hover{background:var(--ice-light);}
+  .btn-danger{background:var(--danger-bg); color:var(--danger);}
+  .btn-danger:hover{background:#f8d7d5;}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .row{display:flex; gap:12px; flex-wrap:wrap; align-items:center;}
+  .video-wrap{position:relative; width:100%; max-width:640px; margin:0 auto; border-radius:var(--radius); overflow:hidden; background:#000;}
+  video, canvas.overlay{width:100%; display:block;}
+  canvas.overlay{position:absolute; top:0; right:0; left:0;}
+  .stat{
+    background:var(--ice-light); border-radius:10px; padding:14px 18px; text-align:center; flex:1; min-width:120px;
+  }
+  .stat .num{font-size:28px; font-weight:bold; color:var(--navy);}
+  .stat .lbl{font-size:12px; color:var(--gray); margin-top:2px;}
+  table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  th, td{padding:10px 12px; text-align:right; border-bottom:1px solid #eef1f8;}
+  th{background:var(--navy); color:#fff; font-size:13px;}
+  tr:nth-child(even) td{background:#fbfcff;}
+  .pill{padding:3px 10px; border-radius:999px; font-size:11.5px; font-weight:bold;}
+  .pill-present{background:#E5FBF9; color:var(--teal-dark);}
+  .pill-absent{background:var(--danger-bg); color:var(--danger);}
+  .student-card{
+    display:flex; align-items:center; gap:12px; background:var(--ice-light); border-radius:10px; padding:10px 14px;
+    margin-bottom:8px;
+  }
+  .student-card img{width:46px; height:46px; border-radius:50%; object-fit:cover; border:2px solid var(--teal);}
+  .student-card .info{flex:1;}
+  .student-card .name{font-weight:bold; font-size:14px;}
+  .student-card .meta{font-size:12px; color:var(--gray);}
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--navy); color:#fff;
+    padding:14px 26px; border-radius:999px; font-weight:bold; box-shadow:0 6px 20px rgba(0,0,0,.25);
+    display:none; z-index:100; font-size:14px;
+  }
+  .toast.show{display:block; animation:pop .3s ease;}
+  .toast.err{background:var(--danger);}
+  @keyframes pop{from{transform:translateX(-50%) scale(.8); opacity:0;} to{transform:translateX(-50%) scale(1); opacity:1;}}
+  .muted{color:var(--gray); font-size:13px;}
+  .badge-count{background:var(--teal); color:#fff; border-radius:999px; padding:1px 9px; font-size:12px; margin-right:6px;}
+  .empty{text-align:center; padding:30px; color:var(--gray);}
+  .slider-row{display:flex; align-items:center; gap:12px;}
+  input[type=range]{flex:1; accent-color:var(--teal);}
+  #loadingOverlay{
+    position:fixed; inset:0; background:var(--navy-dark); color:#fff; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; z-index:999; font-size:16px; gap:14px;
+  }
+  .spinner{width:40px; height:40px; border:4px solid rgba(255,255,255,.25); border-top-color:var(--teal);
+    border-radius:50%; animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .thumb-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
+  .thumb-row img{width:60px; height:60px; object-fit:cover; border-radius:8px; border:2px solid var(--ice);}
+  .live-banner{display:none; margin:0 auto 12px; max-width:640px; background:#FFF6DA; color:#7A5A00;
+    border:1.5px solid #F5B700; border-radius:10px; padding:12px 16px; font-weight:bold; font-size:15px; text-align:center;}
+  .live-banner.show{display:block; animation:fade .2s ease;}
+  .live-banner .sub{font-weight:normal; font-size:12.5px; margin-top:4px;}
+  .live-bar{height:6px; background:#F3E3A6; border-radius:999px; margin-top:8px; overflow:hidden;}
+  .live-bar > div{height:100%; background:#F5B700; width:100%; transition:width .2s linear;}
+  .check-row{display:flex; align-items:center; gap:10px; margin-top:10px;}
+  .check-row input{width:18px; height:18px; accent-color:var(--teal);}
+  .sec-h{font-size:15px; margin:14px 0 4px;}
+  .footer-note{text-align:center; font-size:12px; color:var(--gray); margin-top:20px;}
+</style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <div>جارٍ تحميل نماذج الذكاء الاصطناعي...</div>
+  <div style="font-size:12px; color:#CADCFC;">يتطلب اتصالاً بالإنترنت أول مرة فقط</div>
+</div>
+
+<header>
+  <div class="brand">
+    <div class="logo">س</div>
+    <div>
+      <h1>سجلّ</h1>
+      <div class="sub">نظام ذكي لتسجيل الحضور بالتعرف على الوجه — قسم إدارة الأعمال</div>
+    </div>
+  </div>
+  <div class="row" style="gap:24px;">
+    <div class="stat" style="background:rgba(255,255,255,.08); min-width:90px;">
+      <div class="num" id="hdrTotal" style="color:#fff;">0</div>
+      <div class="lbl" style="color:#CADCFC;">طالب مسجَّل</div>
+    </div>
+    <div class="stat" style="background:rgba(255,255,255,.08); min-width:90px;">
+      <div class="num" id="hdrPresent" style="color:#00E6D2;">0</div>
+      <div class="lbl" style="color:#CADCFC;">حاضر اليوم</div>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button data-tab="enroll" class="active">1. تسجيل الطلبة</button>
+  <button data-tab="attend">2. تسجيل الحضور</button>
+  <button data-tab="report">3. التقرير والتصدير</button>
+  <button data-tab="settings">الإعدادات والنسخ الاحتياطي</button>
+</nav>
+
+<main>
+
+  <!-- ============ TAB 1: ENROLLMENT ============ -->
+  <section class="panel active" id="panel-enroll">
+    <div class="grid2">
+      <div class="card">
+        <h2><span class="dot"></span> إضافة طالب جديد (مرة واحدة فقط)</h2>
+        <p class="muted">التقط صورة واضحة للوجه بالكاميرا أو ارفعها من الجهاز. تُحفظ سمات الوجه محلياً في متصفحك ولا تُرسل لأي خادم خارجي.</p>
+        <label>اسم الطالب</label>
+        <input type="text" id="stName" placeholder="مثال: أحمد محمد علي">
+        <label>الرقم الجامعي (اختياري)</label>
+        <input type="text" id="stId" placeholder="مثال: BA2023-014">
+
+        <label>مصدر الصورة</label>
+        <div class="row">
+          <button class="btn btn-outline" id="btnUseCam">📷 التقاط بالكاميرا</button>
+          <button class="btn btn-outline" id="btnUseFile">🖼️ رفع صورة من الجهاز</button>
+          <input type="file" id="fileInput" accept="image/*" style="display:none">
+        </div>
+
+        <div id="camEnrollWrap" style="display:none; margin-top:14px;">
+          <div class="video-wrap" style="max-width:360px;">
+            <video id="enrollVideo" autoplay muted playsinline></video>
+          </div>
+          <div class="row" style="margin-top:10px; justify-content:center;">
+            <button class="btn btn-primary" id="btnSnap">📸 التقاط</button>
+          </div>
+        </div>
+
+        <div class="thumb-row" id="enrollPreviewRow"></div>
+
+        <div class="row" style="margin-top:16px;">
+          <button class="btn btn-primary" id="btnSaveStudent" disabled>💾 حفظ بيانات الطالب</button>
+        </div>
+        <div id="enrollStatus" class="muted" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="card">
+        <h2><span class="dot"></span> الطلبة المسجَّلون <span class="badge-count" id="listCount">0</span></h2>
+        <input type="text" id="searchStudents" placeholder="ابحث بالاسم أو الرقم الجامعي..." style="margin-bottom:12px;">
+        <div id="studentsList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TAB 2: ATTENDANCE ============ -->
+  <section class="panel" id="panel-attend">
+    <div class="card">
+      <h2><span class="dot"></span> بيانات الجلسة والتقرير</h2>
+      <p class="muted">قسم إدارة الأعمال - كلية الإدارة والاقتصاد - 2026-2027 الكورس الأول</p>
+      <div class="grid2">
+        <div>
+          <label>اسم المادة</label>
+          <input type="text" id="courseName" placeholder="مثال: مبادئ الإدارة">
+        </div>
+        <div>
+          <label>اسم الأستاذ</label>
+          <input type="text" id="instructorName" placeholder="مثال: م.م. علي عبد الوهاب">
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <div class="stat" style="flex:none; min-width:170px;">
+          <div class="num" id="liveClock" style="font-size:18px;">--:--:--</div>
+          <div class="lbl" id="liveDate">التاريخ والوقت الآني</div>
+        </div>
+        <p class="muted" style="margin:0;">يُسجَّل التاريخ والوقت تلقائياً من ساعة الحاسوب مع كل عملية حضور، ولا حاجة لإدخالهما يدوياً.</p>
+      </div>
+      <input type="hidden" id="sessionDate">
+      <div class="slider-row" style="margin-top:14px;">
+        <label style="margin:0; white-space:nowrap;">عتبة المسافة الإقليدية الأقل أشد صرامة (Similarity Threshold)</label>
+        <input type="range" id="threshold" min="0.35" max="0.7" step="0.01" value="0.5">
+        <span id="thresholdVal" style="font-weight:bold; min-width:40px;">0.50</span>
+      </div>
+      <p class="muted">قيمة أقل = تطابق أكثر صرامة (أدق لكن أكثر رفضاً) — القيمة الافتراضية مناسبة لأغلب الحالات.</p>
+
+      <div style="border-top:1px solid #eef1f8; margin-top:14px;">
+        <h3 class="sec-h">🛡️ التحقق من الحيوية (Liveness Detection)</h3>
+        <p class="muted" style="margin-top:0;">يمنع تسجيل الحضور بصورة ورقية أو صورة على شاشة، لأنه يطلب من الطالب حركة لا تستطيع الصورة الثابتة أداءها.</p>
+        <div class="check-row">
+          <input type="checkbox" id="livenessOn" checked>
+          <label for="livenessOn" style="margin:0;">تفعيل التحقق من الحيوية</label>
+        </div>
+        <div class="grid2">
+          <div>
+            <label>نوع التحدّي</label>
+            <select id="livenessMode">
+              <option value="random" selected>عشوائي: رمش العين أو حركة الرأس</option>
+              <option value="blink">رمش العين فقط</option>
+              <option value="turn">حركة الرأس فقط</option>
+              <option value="both">الاثنان معاً (أعلى أماناً)</option>
+            </select>
+          </div>
+          <div>
+            <label>وضع التشغيل</label>
+            <select id="testCondition">
+              <option value="normal" selected>استخدام عادي (يُسجَّل الحضور)</option>
+              <option value="real">تجربة: وجه حقيقي</option>
+              <option value="print">تجربة: صورة ورقية مطبوعة</option>
+              <option value="screen">تجربة: صورة على شاشة هاتف</option>
+            </select>
+          </div>
+        </div>
+        <p class="muted" id="testModeNote" style="display:none; color:#7A5A00; font-weight:bold;">⚠️ وضع التجربة: تُحفظ المحاولات في سجل التجربة فقط، ولا يُسجَّل أي حضور فعلي.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span> الكاميرا الحيّة</h2>
+      <div class="row" style="margin-bottom:14px;">
+        <button class="btn btn-primary" id="btnStartCam">▶️ بدء تسجيل الحضور</button>
+        <button class="btn btn-danger" id="btnStopCam" disabled>⏹️ إيقاف</button>
+      </div>
+      <div class="live-banner" id="livenessBanner">
+        <div id="livenessMsg"></div>
+        <div class="sub" id="livenessSub"></div>
+        <div class="live-bar"><div id="livenessBar"></div></div>
+      </div>
+      <div class="video-wrap">
+        <video id="attendVideo" autoplay muted playsinline></video>
+        <canvas class="overlay" id="attendOverlay"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span> سُجِّل حضورهم الآن</h2>
+      <div class="row" style="margin-bottom:14px;">
+        <div class="stat"><div class="num" id="livePresentCount">0</div><div class="lbl">حاضر</div></div>
+        <div class="stat"><div class="num" id="liveAbsentCount">0</div><div class="lbl">غائب حتى الآن</div></div>
+        <div class="stat"><div class="num" id="livePercent">0%</div><div class="lbl">نسبة الحضور</div></div>
+      </div>
+      <div id="liveList"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span> إضافة حضور يدوي (احتياطي)</h2>
+      <p class="muted">في حال تعذّر التعرف على وجه طالب (إضاءة/زاوية)، يمكن تسجيله يدوياً هنا.</p>
+      <div class="row">
+        <select id="manualSelect" style="max-width:320px;"></select>
+        <button class="btn btn-outline" id="btnManualAdd">➕ تسجيل حضور يدوي</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span> سجل تجربة التحقق من الحيوية <span class="badge-count" id="liveLogCount">0</span></h2>
+      <p class="muted">يحفظ كل محاولة ونتيجتها لاستخدام الأرقام في البحث. الهدف: نسبة قبول الصور قريبة من 0%، ونسبة قبول الوجوه الحقيقية قريبة من 100%.</p>
+      <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>وضع التشغيل</th><th>التحقق</th><th>المحاولات</th><th>مقبولة</th><th>مرفوضة</th><th>نسبة القبول</th><th>متوسط زمن القبول (ث)</th></tr></thead>
+        <tbody id="liveStatsBody"></tbody>
+      </table>
+      </div>
+      <div class="row" style="margin-top:14px;">
+        <button class="btn btn-navy" id="btnExportLiveLog">⬇️ تصدير السجل (CSV)</button>
+        <button class="btn btn-danger" id="btnClearLiveLog">🗑️ مسح سجل التجربة</button>
+      </div>
+      <details style="margin-top:12px;">
+        <summary class="muted" style="cursor:pointer;">عرض آخر 30 محاولة</summary>
+        <div style="overflow-x:auto;">
+        <table style="margin-top:8px;">
+          <thead><tr><th>الوقت</th><th>الوضع</th><th>الطالب</th><th>التحدّي</th><th>النتيجة</th><th>المدة (ث)</th></tr></thead>
+          <tbody id="liveLogBody"></tbody>
+        </table>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ TAB 3: REPORT ============ -->
+  <section class="panel" id="panel-report">
+    <div class="card">
+      <h2><span class="dot"></span> تقرير الجلسة الحالية</h2>
+      <div class="row" style="margin-bottom:16px;">
+        <div class="stat"><div class="num" id="repTotal">0</div><div class="lbl">إجمالي المسجّلين</div></div>
+        <div class="stat"><div class="num" id="repPresent">0</div><div class="lbl">الحاضرون</div></div>
+        <div class="stat"><div class="num" id="repAbsent">0</div><div class="lbl">الغائبون</div></div>
+        <div class="stat"><div class="num" id="repPercent">0%</div><div class="lbl">نسبة الانتظام</div></div>
+      </div>
+      <div class="row" style="margin-bottom:16px;">
+        <button class="btn btn-primary" id="btnExportWord">📄 تصدير تقرير Word</button>
+        <button class="btn btn-outline" id="btnPrint">🖨️ طباعة</button>
+        <button class="btn btn-danger" id="btnResetSession">↺ تصفير جلسة اليوم</button>
+      </div>
+      <table>
+        <thead><tr><th>ت</th><th>الاسم</th><th>الرقم الجامعي</th><th>الحالة</th><th>وقت التسجيل</th><th>طريقة التحقق</th></tr></thead>
+        <tbody id="reportTable"></tbody>
+      </table>
+      <div class="empty" id="reportEmpty" style="display:none;">لا يوجد طلبة مسجَّلون بعد. ابدأ من تبويب "تسجيل الطلبة".</div>
+    </div>
+  </section>
+
+  <!-- ============ TAB 4: SETTINGS ============ -->
+  <section class="panel" id="panel-settings">
+    <div class="card">
+      <h2><span class="dot"></span> النسخ الاحتياطي واستعادة البيانات</h2>
+      <p class="muted">جميع بيانات الطلبة وسجلات الحضور محفوظة محلياً داخل هذا المتصفح فقط. يُنصح بأخذ نسخة احتياطية دورياً.</p>
+      <div class="row">
+        <button class="btn btn-navy" id="btnBackup">⬇️ تنزيل نسخة احتياطية (JSON)</button>
+        <button class="btn btn-outline" id="btnRestore">⬆️ استعادة نسخة احتياطية</button>
+        <input type="file" id="restoreInput" accept=".json" style="display:none">
+      </div>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span> منطقة الخطر</h2>
+      <div class="row">
+        <button class="btn btn-danger" id="btnDeleteAll">🗑️ حذف جميع بيانات الطلبة نهائياً</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<section style="padding:24px;border:1px solid #ddd;margin:20px;background:white" dir="rtl">
+<h2>التقييم البحثي الموثق</h2><p>هذه نسخة بحثية وليست نظام تحقق معتمداً. الحيوية بالمعالم قد تُخدع بالفيديو أو الصور المتحركة. بيانات المتصفح غير مشفرة ولا توجد حسابات دخول. استخدم رموز المشاركين وجهازاً مشفراً مقيد الوصول.</p>
+<label><input type="checkbox" id="consentVerified"> تحققت من الموافقة الخطية الطوعية قبل حفظ وجه جديد ومن السماح المؤسسي للتجربة</label>
+<p>أوقف الحضور العادي واختر تجربة وجه حقيقي أو صورة من إعدادات الحيوية قبل البدء. كل ضغطة بدء = محاولة واحدة مستقلة مسجلة، حتى عند غياب الوجه أو رفضه.</p>
+<label>رمز الجلسة <input id="rSession" value="S01"></label>
+<label>رمز المشارك <input id="rSubject" placeholder="P001"></label>
+<label>الحقيقة <select id="rTruth"><option value="genuine">مسجل حي</option><option value="unknown">غير مسجل حي</option><option value="print">صورة مطبوعة</option><option value="screen">صورة ثابتة على شاشة</option><option value="replay">فيديو معاد</option></select></label>
+<label>هوية المسجل الصحيحة أو المستهدفة <select id="rExpected"></select></label>
+<label>الظرف <input id="rCondition" value="baseline"></label>
+<label>الإضاءة lux أو غير مقاسة <input id="rLux" value="unmeasured"></label>
+<label>المسافة بالمتر <input id="rDistance" type="number" min="0.1" step="0.1" value="0.7"></label>
+<label>الزاوية درجة <input id="rAngle" type="number" value="0"></label>
+<label>الجهاز والكاميرا <input id="rDevice" placeholder="CPU RAM OS camera"></label>
+<button id="rStart" class="btn">بدء محاولة 15 ثانية</button><button id="rAbort" class="btn">إلغاء مسجل</button>
+<button id="rExport" class="btn">تصدير CSV البحث</button><p id="rStatus" role="status">لا توجد محاولة نشطة</p>
+<button id="rManualStart" class="btn">بدء توقيت يدوي</button><button id="rManualEnd" class="btn">إنهاء وتسجيل الزمن اليدوي</button>
+<button id="rDelete" class="btn">حذف جميع بيانات سجلّ من هذا المتصفح</button>
+</section>
+<script>
+/* ===================== Storage helpers ===================== */
+const LS_STUDENTS = 'sijill_students_v1';
+const LS_ATTEND_PREFIX = 'sijill_attend_'; // + date + '_' + courseName
+
+function getStudents(){ return JSON.parse(localStorage.getItem(LS_STUDENTS) || '[]'); }
+function setStudents(arr){ localStorage.setItem(LS_STUDENTS, JSON.stringify(arr)); }
+
+function todayStr(){
+  const d = new Date();
+  return [d.getFullYear(),pad2(d.getMonth()+1),pad2(d.getDate())].join('-');
+}
+function attendKey(){
+  const date = document.getElementById('sessionDate').value || todayStr();
+  const name = (document.getElementById('courseName').value || 'عام').trim();
+  return LS_ATTEND_PREFIX + date + '_' + name;
+}
+function getAttendance(){ return JSON.parse(localStorage.getItem(attendKey()) || '[]'); }
+function setAttendance(arr){ localStorage.setItem(attendKey(), JSON.stringify(arr)); }
+
+/* ===================== Toast ===================== */
+let toastTimer;
+function showToast(msg, isErr){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isErr ? ' err' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.className='toast', 2200);
+}
+function beep(freq=880, dur=120){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.frequency.value = freq; o.connect(g); g.connect(ctx.destination);
+    g.gain.setValueAtTime(0.15, ctx.currentTime);
+    o.start(); setTimeout(()=>{o.stop(); ctx.close();}, dur);
+  }catch(e){}
+}
+
+/* ===================== Tabs ===================== */
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab === 'report') renderReport();
+    if(btn.dataset.tab === 'attend') refreshManualSelect();
+  });
+});
+
+/* ===================== Load face-api models ===================== */
+const MODEL_URL = 'models';
+async function loadModels(){
+  await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+  await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+  await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+  document.getElementById('loadingOverlay').style.display = 'none';
+  refreshStudentsList();
+  refreshHeaderStats();
+  refreshManualSelect();
+}
+loadModels().catch(err=>{
+  document.getElementById('loadingOverlay').innerHTML =
+    '<div style="max-width:420px; text-align:center;">تعذّر تحميل نماذج الذكاء الاصطناعي. تحقق من وجود مجلدي models و vendor وشغّل الحزمة على localhost ثم أعد التحميل.<br><br><span style="font-size:12px; color:#ffb4b4;">'+err.message+'</span></div>';
+});
+
+/* ===================== Enrollment ===================== */
+let enrollStream = null;
+let capturedDescriptor = null;
+let capturedThumb = null;
+
+document.getElementById('btnUseCam').addEventListener('click', async ()=>{
+  document.getElementById('camEnrollWrap').style.display = 'block';
+  try{
+    enrollStream = await navigator.mediaDevices.getUserMedia({video:{width:480,height:360}});
+    document.getElementById('enrollVideo').srcObject = enrollStream;
+  }catch(e){ showToast('تعذّر الوصول إلى الكاميرا', true); }
+});
+
+document.getElementById('btnUseFile').addEventListener('click', ()=> document.getElementById('fileInput').click());
+
+document.getElementById('fileInput').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const img = await faceapi.bufferToImage(file);
+  await processEnrollImage(img);
+});
+
+document.getElementById('btnSnap').addEventListener('click', async ()=>{
+  const video = document.getElementById('enrollVideo');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  await processEnrollImage(canvas);
+});
+
+async function processEnrollImage(input){
+  capturedDescriptor=null; capturedThumb=null; document.getElementById('btnSaveStudent').disabled=true;
+  document.getElementById('enrollStatus').textContent = 'جارٍ تحليل الوجه...';
+  const detection = await faceapi.detectSingleFace(input, new faceapi.TinyFaceDetectorOptions())
+    .withFaceLandmarks().withFaceDescriptor();
+  if(!detection){
+    capturedDescriptor=null; capturedThumb=null; document.getElementById('btnSaveStudent').disabled=true;
+    document.getElementById('enrollStatus').textContent = '⚠️ لم يتم العثور على وجه واضح في الصورة. جرّب إضاءة أفضل أو صورة أقرب.';
+    showToast('لم يتم العثور على وجه', true);
+    return;
+  }
+  capturedDescriptor = Array.from(detection.descriptor);
+  const c = document.createElement('canvas'); c.width=120; c.height=120;
+  c.getContext('2d').drawImage(input, 0,0,120,120);
+  capturedThumb = c.toDataURL('image/jpeg', 0.8);
+  document.getElementById('enrollPreviewRow').innerHTML = '';
+  const im = document.createElement('img'); im.src = capturedThumb;
+  document.getElementById('enrollPreviewRow').appendChild(im);
+  document.getElementById('enrollStatus').textContent = '✅ تم رصد الوجه بنجاح. يمكنك الآن حفظ بيانات الطالب.';
+  document.getElementById('btnSaveStudent').disabled = false;
+  if(enrollStream){ enrollStream.getTracks().forEach(t=>t.stop()); enrollStream=null; }
+  document.getElementById('camEnrollWrap').style.display = 'none';
+}
+
+document.getElementById('btnSaveStudent').addEventListener('click', ()=>{
+  const name = document.getElementById('stName').value.trim();
+  if(!name){ showToast('يرجى إدخال اسم الطالب', true); return; }
+  if(!capturedDescriptor){ showToast('يرجى التقاط صورة أولاً', true); return; }
+  if(!document.getElementById('consentVerified').checked){showToast('وثّق الموافقة الخطية أولاً',true);return;}
+  const students = getStudents();
+  students.push({
+    id: 'st_' + crypto.randomUUID(),
+    name, studentId: document.getElementById('stId').value.trim(),
+    descriptor: capturedDescriptor, photo: null,
+    consentVerifiedAt: new Date().toISOString(), createdAt: new Date().toISOString()
+  });
+  setStudents(students);
+  showToast('تم حفظ بيانات الطالب: ' + name);
+  document.getElementById('stName').value='';
+  document.getElementById('stId').value='';
+  document.getElementById('enrollPreviewRow').innerHTML='';
+  document.getElementById('enrollStatus').textContent='';
+  document.getElementById('btnSaveStudent').disabled = true;
+  capturedDescriptor = null; capturedThumb = null;
+  refreshStudentsList(); refreshHeaderStats(); refreshManualSelect();
+});
+
+function refreshStudentsList(){
+  const students = getStudents();
+  const q = (document.getElementById('searchStudents').value || '').trim().toLowerCase();
+  const filtered = students.filter(s => !q || s.name.toLowerCase().includes(q) || (s.studentId||'').toLowerCase().includes(q));
+  document.getElementById('listCount').textContent = students.length;
+  const wrap = document.getElementById('studentsList');
+  if(filtered.length === 0){
+    wrap.innerHTML = '<div class="empty">لا يوجد طلبة مسجَّلون بعد</div>';
+    return;
+  }
+  wrap.innerHTML = filtered.map(s => `
+    <div class="student-card">
+      <span aria-label="لا تُخزن صورة الوجه">👤</span>
+      <div class="info">
+        <div class="name">${escapeHtml(s.name)}</div>
+        <div class="meta">${escapeHtml(s.studentId || '—')}</div>
+      </div>
+      <button class="btn btn-danger" style="padding:6px 12px;" onclick="deleteStudent('${s.id}')">حذف</button>
+    </div>
+  `).join('');
+}
+function deleteStudent(id){
+  if(!confirm('هل تريد حذف هذا الطالب نهائياً؟')) return;
+  setStudents(getStudents().filter(s => s.id !== id));
+  refreshStudentsList(); refreshHeaderStats(); refreshManualSelect();
+}
+document.getElementById('searchStudents').addEventListener('input', refreshStudentsList);
+
+function escapeHtml(str){
+  const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML;
+}
+
+/* ===================== Attendance / Recognition ===================== */
+let attendStream = null;
+let recognitionTimer = null;
+let loopActive = false;
+let faceMatcher = null;
+
+document.getElementById('sessionDate').value = todayStr();
+
+function pad2(n){ return String(n).padStart(2,'0'); }
+function updateLiveClock(){
+  const now = new Date();
+  document.getElementById('liveClock').textContent =
+    pad2(now.getHours())+':'+pad2(now.getMinutes())+':'+pad2(now.getSeconds());
+  document.getElementById('liveDate').textContent =
+    now.toLocaleDateString('ar-IQ', {year:'numeric', month:'long', day:'numeric'});
+  document.getElementById('sessionDate').value = todayStr();
+}
+updateLiveClock();
+setInterval(updateLiveClock, 1000);
+
+function buildFaceMatcher(){
+  const students = getStudents();
+  if(students.length === 0){ faceMatcher = null; return; }
+  const labeled = students.map(s => new faceapi.LabeledFaceDescriptors(s.id, [new Float32Array(s.descriptor)]));
+  const threshold = parseFloat(document.getElementById('threshold').value);
+  faceMatcher = new faceapi.FaceMatcher(labeled, threshold);
+}
+
+document.getElementById('threshold').addEventListener('input', (e)=>{
+  document.getElementById('thresholdVal').textContent = parseFloat(e.target.value).toFixed(2);
+  buildFaceMatcher();
+});
+
+document.getElementById('btnStartCam').addEventListener('click', async ()=>{
+  if(getStudents().length === 0){ showToast('يجب تسجيل الطلبة أولاً من التبويب الأول', true); return; }
+  buildFaceMatcher();
+  try{
+    attendStream = await navigator.mediaDevices.getUserMedia({video:{width:640,height:480}});
+    const video = document.getElementById('attendVideo');
+    video.srcObject = attendStream;
+    document.getElementById('btnStartCam').disabled = true;
+    document.getElementById('btnStopCam').disabled = false;
+    video.onloadedmetadata = ()=>{
+      const canvas = document.getElementById('attendOverlay');
+      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+      faceapi.matchDimensions(canvas, {width:video.videoWidth, height:video.videoHeight});
+      loopActive = true;
+      recognitionLoop();
+    };
+  }catch(e){ showToast('تعذّر الوصول إلى الكاميرا', true); }
+});
+
+document.getElementById('btnStopCam').addEventListener('click', stopCamera);
+function stopCamera(){
+  if(researchTrial) researchFinish('','aborted');
+  loopActive = false;
+  if(recognitionTimer){ clearTimeout(recognitionTimer); recognitionTimer=null; }
+  resetLivenessStates();
+  if(attendStream){ attendStream.getTracks().forEach(t=>t.stop()); attendStream=null; }
+  const canvas = document.getElementById('attendOverlay');
+  canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+  document.getElementById('btnStartCam').disabled = false;
+  document.getElementById('btnStopCam').disabled = true;
+}
+
+/* ===================== Liveness Detection (anti-spoofing) ===================== */
+/*
+  Active challenge-response liveness check, computed entirely in the browser from
+  the 68 facial landmarks that face-api.js already produces:
+   - Blink:      Eye Aspect Ratio (EAR) must drop clearly below the person's own
+                 open-eye baseline, then recover (a flat photo cannot close its eyes).
+   - Head turn:  horizontal nose position relative to the jaw line (yaw ratio) must
+                 move away from its starting value and then return to centre
+                 (on a flat photo this ratio barely changes, even when the paper is tilted).
+  The challenge type is chosen at random per attempt so it cannot be predicted.
+*/
+const LS_LIVE_LOG = 'sijill_liveness_log_v1';
+const LIVE = {
+  TIMEOUT_MS: 8000,          // time allowed for a one-step challenge
+  TIMEOUT_TWO_STEPS_MS: 12000,
+  LOST_MS: 2500,             // face missing longer than this => attempt ends
+  RETRY_COOLDOWN_MS: 3000,   // pause before a new attempt for the same student
+  EAR_CLOSE_RATIO: 0.72,     // eyes "closed" when EAR < 72% of open-eye baseline
+  EAR_OPEN_RATIO: 0.88,      // eyes "re-opened" when EAR > 88% of baseline
+  MIN_EAR_BASE: 0.15,        // below this the eyes are not measurable
+  YAW_DELTA: 0.13,           // head counted as "turned" beyond this yaw change
+  CENTER_DELTA: 0.07,        // head counted as "back to centre" within this
+  ASSOC_MARGIN: 0.12,        // extra distance allowed to keep tracking a turned face
+  WARMUP_FRAMES: 3
+};
+const COND_LABEL = { normal:'استخدام عادي', real:'تجربة: وجه حقيقي', print:'تجربة: صورة مطبوعة', screen:'تجربة: صورة على شاشة' };
+const CHAL_LABEL = { blink:'رمش', turn:'حركة الرأس', none:'بدون تحقق' };
+const RESULT_LABEL = {
+  passed:'مقبول (اجتاز التحقق)', nocheck:'مقبول (بدون تحقق)',
+  timeout:'مرفوض (انتهى الوقت)', lost:'مرفوض (اختفى الوجه)'
+};
+function isAccepted(r){ return r === 'passed' || r === 'nocheck'; }
+function methodLabel(m){
+  if(!m) return '—';
+  if(m === 'manual') return 'يدوي';
+  if(m === 'none') return 'بدون تحقق';
+  return m.split('+').map(x => CHAL_LABEL[x] || x).join(' + ');
+}
+function getLiveLog(){ try{ return JSON.parse(localStorage.getItem(LS_LIVE_LOG) || '[]'); }catch(e){ return []; } }
+function setLiveLog(a){ localStorage.setItem(LS_LIVE_LOG, JSON.stringify(a)); }
+
+function livenessEnabled(){ return document.getElementById('livenessOn').checked; }
+function testCondition(){ return document.getElementById('testCondition').value; }
+
+const liveState = {};    // studentId -> ongoing challenge
+const liveCooldown = {}; // studentId -> {until, ok}
+
+function resetLivenessStates(){
+  Object.keys(liveState).forEach(k => delete liveState[k]);
+  Object.keys(liveCooldown).forEach(k => delete liveCooldown[k]);
+  updateLivenessBanner(Date.now());
+}
+['livenessOn','livenessMode','testCondition'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', ()=>{
+    document.getElementById('testModeNote').style.display = testCondition() === 'normal' ? 'none' : 'block';
+    resetLivenessStates();
+  });
+});
+
+function ptDist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+function eyeAR(p){ return (ptDist(p[1],p[5]) + ptDist(p[2],p[4])) / (2 * (ptDist(p[0],p[3]) || 1)); }
+function faceMetrics(landmarks){
+  const pts = landmarks.positions;
+  const ear = (eyeAR(pts.slice(36,42)) + eyeAR(pts.slice(42,48))) / 2;
+  const jl = pts[0], jr = pts[16], nose = pts[30];
+  const yaw = (nose.x - jl.x) / ((jr.x - jl.x) || 1);
+  return { ear, yaw };
+}
+function quantile(arr, q){
+  const a = arr.slice().sort((x,y)=>x-y);
+  return a[Math.min(a.length-1, Math.floor(q*(a.length-1)))];
+}
+function boxIoU(a,b){
+  const x1=Math.max(a.x,b.x), y1=Math.max(a.y,b.y);
+  const x2=Math.min(a.x+a.width,b.x+b.width), y2=Math.min(a.y+a.height,b.y+b.height);
+  const inter=Math.max(0,x2-x1)*Math.max(0,y2-y1);
+  const uni=a.width*a.height + b.width*b.height - inter;
+  return uni>0 ? inter/uni : 0;
+}
+
+function pickChallenge(){
+  const mode = document.getElementById('livenessMode').value;
+  if(mode === 'blink') return ['blink'];
+  if(mode === 'turn') return ['turn'];
+  if(mode === 'both') return crypto.getRandomValues(new Uint8Array(1))[0] < 128 ? ['blink','turn'] : ['turn','blink'];
+  return [crypto.getRandomValues(new Uint8Array(1))[0] < 128 ? 'blink' : 'turn'];
+}
+function newLiveState(student, now){
+  const steps = pickChallenge();
+  return { student, steps, stepIdx:0, start:now, lastSeen:now, lastBox:null, frames:0,
+           timeout: steps.length > 1 ? LIVE.TIMEOUT_TWO_STEPS_MS : LIVE.TIMEOUT_MS,
+           earHist:[], yawHist:[], eyesClosed:false, turned:false, yawBase:null, done:false };
+}
+
+// Update one challenge with one frame. A step can only be COMPLETED on a frame whose
+// face matched the student's identity (canComplete), so a different face cannot finish it.
+function stepLiveness(st, m, now, canComplete){
+  if(!canComplete || !Number.isFinite(m.ear) || !Number.isFinite(m.yaw)) return;
+  st.frames++; st.lastSeen = now;
+  st.earHist.push(m.ear); if(st.earHist.length > 20) st.earHist.shift();
+  st.yawHist.push(m.yaw); if(st.yawHist.length > 20) st.yawHist.shift();
+  if(st.frames < LIVE.WARMUP_FRAMES) return;
+  const step = st.steps[st.stepIdx];
+  let stepDone = false;
+  if(step === 'blink'){
+    const base = quantile(st.earHist, 0.8);
+    if(base < LIVE.MIN_EAR_BASE) return;
+    if(!st.eyesClosed && m.ear < base * LIVE.EAR_CLOSE_RATIO) st.eyesClosed = true;
+    else if(st.eyesClosed && m.ear > base * LIVE.EAR_OPEN_RATIO && canComplete) stepDone = true;
+  } else {
+    if(st.yawBase == null) st.yawBase = quantile(st.yawHist, 0.5);
+    const dev = Math.abs(m.yaw - st.yawBase);
+    if(!st.turned && dev > LIVE.YAW_DELTA) st.turned = true;
+    else if(st.turned && dev < LIVE.CENTER_DELTA && canComplete) stepDone = true;
+  }
+  if(stepDone){
+    st.stepIdx++;
+    st.eyesClosed = false; st.turned = false; st.yawBase = null;
+    if(st.stepIdx >= st.steps.length) st.done = true;
+  }
+}
+
+function appendLiveLog(entry){
+  const log = getLiveLog(); log.push(entry); setLiveLog(log); renderLiveStats();
+}
+function finishAttempt(student, cond, result, steps, start, end, frames, liveOn){
+  const ok = isAccepted(result);
+  if(researchTrial){ researchFinish(ok ? student.id : '',result); return; }
+  liveCooldown[student.id] = { until: end + LIVE.RETRY_COOLDOWN_MS, ok };
+  let logIt = true;
+  if(cond === 'normal'){
+    if(ok){ if(!markPresent(student, steps.join('+'))) logIt = false; }
+    else { beep(300, 250); showToast('✗ لم يجتز التحقق من الحيوية: ' + student.name, true); }
+  } else {
+    if(ok){ beep(1046,130); showToast('تجربة — مقبول: ' + student.name); }
+    else { beep(300,250); showToast('تجربة — مرفوض: ' + student.name, true); }
+  }
+  if(logIt) appendLiveLog({
+    ts: new Date().toISOString(), cond, liveness: liveOn, challenge: steps.join('+'),
+    name: student.id, sid: '', result,
+    durationMs: Math.max(0, end - start), frames
+  });
+}
+
+function handleFace(student, det, now, liveOn, cond, matched){
+  if(testCondition() !== 'normal' && !researchTrial) return {label:'ابدأ محاولة بحثية',color:'#F5B700'};
+  const name = student.name;
+  const st0 = liveState[student.id];
+  if(st0 && now-st0.start > st0.timeout){ delete liveState[student.id]; finishAttempt(student,cond,'timeout',st0.steps,st0.start,now,st0.frames,true); return {label:'انتهت المهلة',color:'#C0392B'}; }
+  if(!matched){ // tracked (turned) face, only allowed to feed an ongoing challenge
+    if(!st0) return null;
+    st0.lastBox = {x:det.detection.box.x, y:det.detection.box.y, width:det.detection.box.width, height:det.detection.box.height};
+    stepLiveness(st0, faceMetrics(det.landmarks), now, false);
+    return { label: name + ' — ' + (st0.steps[st0.stepIdx]==='blink' ? 'ارمش' : 'أدِر رأسك'), color:'#F5B700' };
+  }
+  if(cond === 'normal' && !st0 && getAttendance().some(r => r.studentId === student.id))
+    return { label: name + ' ✓', color:'#00B8A9' };
+  const cd = liveCooldown[student.id];
+  if(!st0 && cd && now < cd.until)
+    return { label: name + (cd.ok ? ' ✓' : ' ✗ رُفض'), color: cd.ok ? '#00B8A9' : '#C0392B' };
+  if(!liveOn){
+    finishAttempt(student, cond, 'nocheck', ['none'], now, now, 1, false);
+    return { label: name, color:'#00B8A9' };
+  }
+  const st = st0 || (liveState[student.id] = newLiveState(student, now));
+  st.lastBox = {x:det.detection.box.x, y:det.detection.box.y, width:det.detection.box.width, height:det.detection.box.height};
+  stepLiveness(st, faceMetrics(det.landmarks), now, true);
+  if(st.done){
+    delete liveState[student.id];
+    finishAttempt(student, cond, 'passed', st.steps, st.start, now, st.frames, true);
+    return { label: name + ' ✓', color:'#00B8A9' };
+  }
+  return { label: name + ' — ' + (st.steps[st.stepIdx]==='blink' ? 'ارمش' : 'أدِر رأسك'), color:'#F5B700' };
+}
+
+function finalizeStaleStates(now){
+  const cond = testCondition();
+  Object.keys(liveState).forEach(id=>{
+    const st = liveState[id];
+    const timedOut = now - st.start > st.timeout;
+    const lost = now - st.lastSeen > LIVE.LOST_MS;
+    if(!timedOut && !lost) return;
+    delete liveState[id];
+    // All started attempts remain observable, including brief detections.
+    finishAttempt(st.student, cond, timedOut ? 'timeout' : 'lost', st.steps, st.start, now, st.frames, true);
+  });
+}
+
+function updateLivenessBanner(now){
+  const b = document.getElementById('livenessBanner');
+  const list = Object.values(liveState);
+  if(!list.length){ b.classList.remove('show'); return; }
+  const st = list.sort((a,c)=>c.lastSeen-a.lastSeen)[0];
+  const step = st.steps[st.stepIdx];
+  document.getElementById('livenessMsg').textContent = step === 'blink'
+    ? '👁️ ' + st.student.name + ': أغمض عينيك لحظة ثم افتحهما'
+    : '↔️ ' + st.student.name + ': أدِر رأسك قليلاً إلى أحد الجانبين ثم عُد إلى المنتصف';
+  const left = Math.max(0, st.timeout - (now - st.start));
+  document.getElementById('livenessSub').textContent =
+    (st.steps.length > 1 ? 'الخطوة ' + (st.stepIdx+1) + ' من ' + st.steps.length + ' — ' : '') +
+    'الوقت المتبقي: ' + Math.ceil(left/1000) + ' ث';
+  document.getElementById('livenessBar').style.width = (left / st.timeout * 100) + '%';
+  b.classList.add('show');
+}
+
+/* Adaptive loop: fast while a challenge is running (blinks are short), slower otherwise */
+async function recognitionLoop(){
+  if(!loopActive) return;
+  try{ await runRecognitionTick(); }catch(e){ console.error(e); if(researchTrial) researchFinish('','technical_error'); }
+  if(!loopActive) return;
+  const gap = Object.keys(liveState).length ? 40 : (livenessEnabled() ? 250 : 900);
+  recognitionTimer = setTimeout(recognitionLoop, gap);
+}
+
+async function runRecognitionTick(){
+  const tickStarted=performance.now();
+  const video = document.getElementById('attendVideo');
+  const canvas = document.getElementById('attendOverlay');
+  if(!video.videoWidth) return;
+  const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+    .withFaceLandmarks().withFaceDescriptors();
+  if(!loopActive) return;
+  researchObserve(detections,performance.now()-tickStarted);
+  const resized = faceapi.resizeResults(detections, {width:video.videoWidth, height:video.videoHeight});
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  const students = getStudents();
+  const now = Date.now();
+  const liveOn = livenessEnabled();
+  const cond = testCondition();
+  const thr = parseFloat(document.getElementById('threshold').value);
+
+  // 1) identity match
+  const items = resized.map(det => {
+    let student = null;
+    if(faceMatcher){
+      const match = faceMatcher.findBestMatch(det.descriptor);
+      if(match.label !== 'unknown') student = students.find(s => s.id === match.label) || null;
+    }
+    return { det, student, matched: !!student };
+  });
+  const seen = new Set();
+  items.forEach(it => { if(it.student){ if(seen.has(it.student.id)){ it.student=null; it.matched=false; } else seen.add(it.student.id); } });
+  // 2) keep tracking a face that stopped matching while turning (same place + still close to the student's features)
+  items.forEach(it => {
+    if(it.student) return;
+    for(const id in liveState){
+      const st = liveState[id];
+      if(seen.has(id) || !st.lastBox || now - st.lastSeen > 1200) continue;
+      if(boxIoU(st.lastBox, it.det.detection.box) < 0.2) continue;
+      const d = faceapi.euclideanDistance(it.det.descriptor, st.student.descriptor);
+      if(d < thr + LIVE.ASSOC_MARGIN){ it.student = st.student; it.matched = false; seen.add(id); break; }
+    }
+  });
+
+  // 3) liveness + drawing
+  items.forEach(it => {
+    let label = 'غير معروف', color = '#C0392B';
+    if(it.student){
+      const r = handleFace(it.student, it.det, now, liveOn, cond, it.matched);
+      if(r){ label = r.label; color = r.color; }
+    }
+    const box = it.det.detection.box;
+    ctx.strokeStyle = color; ctx.lineWidth = 3;
+    ctx.strokeRect(box.x, box.y, box.width, box.height);
+    ctx.fillStyle = color;
+    ctx.font = 'bold 16px Segoe UI';
+    const textW = ctx.measureText(label).width;
+    ctx.fillRect(box.x, box.y + box.height, textW + 16, 26);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(label, box.x + 8, box.y + box.height + 19);
+  });
+
+  finalizeStaleStates(now);
+  updateLivenessBanner(now);
+}
+
+/* ===== Experiment log: stats, export ===== */
+function renderLiveStats(){
+  const log = getLiveLog();
+  document.getElementById('liveLogCount').textContent = log.length;
+  const groups = {};
+  log.forEach(r => { const k = r.cond + '|' + (r.liveness ? 1 : 0); (groups[k] = groups[k] || []).push(r); });
+  const order = ['normal','real','print','screen'];
+  const keys = Object.keys(groups).sort((a,b)=> order.indexOf(a.split('|')[0]) - order.indexOf(b.split('|')[0]) || b.localeCompare(a));
+  const body = document.getElementById('liveStatsBody');
+  if(!keys.length){ body.innerHTML = '<tr><td colspan="7" class="muted" style="text-align:center;">لا توجد محاولات بعد</td></tr>'; }
+  else body.innerHTML = keys.map(k => {
+    const L = groups[k], acc = L.filter(r => isAccepted(r.result));
+    const avg = acc.length ? (acc.reduce((s,r)=>s+r.durationMs,0)/acc.length/1000).toFixed(2) : '—';
+    const [c, lv] = k.split('|');
+    return `<tr><td>${COND_LABEL[c]||c}</td><td>${lv==='1' ? 'مفعّل' : 'معطّل'}</td><td>${L.length}</td><td>${acc.length}</td>
+      <td>${L.length-acc.length}</td><td><b>${Math.round(acc.length/L.length*100)}%</b></td><td>${avg}</td></tr>`;
+  }).join('');
+  document.getElementById('liveLogBody').innerHTML = log.slice(-30).reverse().map(r => `<tr>
+    <td>${new Date(r.ts).toLocaleTimeString('ar-IQ')}</td><td>${COND_LABEL[r.cond]||r.cond}</td>
+    <td>${escapeHtml(r.name)}</td><td>${methodLabel(r.challenge)}</td>
+    <td><span class="pill ${isAccepted(r.result)?'pill-present':'pill-absent'}">${RESULT_LABEL[r.result]||r.result}</span></td>
+    <td>${(r.durationMs/1000).toFixed(2)}</td></tr>`).join('');
+}
+document.getElementById('btnExportLiveLog').addEventListener('click', ()=>{
+  const log = getLiveLog();
+  if(!log.length){ showToast('السجل فارغ', true); return; }
+  const esc = csvCell;
+  const head = ['timestamp','condition','liveness_enabled','challenge','student_name','student_id','result','accepted','duration_s','frames','fps'];
+  const rows = log.map(r => [r.ts, r.cond, r.liveness?1:0, r.challenge, r.name, r.sid, r.result, isAccepted(r.result)?1:0,
+    (r.durationMs/1000).toFixed(3), r.frames, r.durationMs>0 ? (r.frames/(r.durationMs/1000)).toFixed(1) : '']);
+  const csv = [head, ...rows].map(row => row.map(esc).join(',')).join('\r\n');
+  const blob = new Blob(['\ufeff', csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'sijill_liveness_log_' + todayStr() + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  showToast('تم تصدير سجل التجربة');
+});
+document.getElementById('btnClearLiveLog').addEventListener('click', ()=>{
+  if(!confirm('سيتم حذف جميع محاولات سجل التجربة. متابعة؟')) return;
+  setLiveLog([]); renderLiveStats(); showToast('تم مسح سجل التجربة');
+});
+
+const sessionCooldown = {}; // studentId -> timestamp of last mark
+function markPresent(student, method){
+  const now = Date.now();
+  if(sessionCooldown[student.id] && now - sessionCooldown[student.id] < 5000) return false;
+  sessionCooldown[student.id] = now;
+
+  let records = getAttendance();
+  if(records.find(r => r.studentId === student.id)) { renderLiveList(); return false; }
+  records.push({ studentId: student.id, name: student.name, sid: student.studentId, time: new Date().toLocaleTimeString('ar-IQ'), method: method || 'none' });
+  setAttendance(records);
+  beep(1046, 130);
+  showToast('✅ تم تسجيل حضور: ' + student.name + (method && method !== 'none' ? ' (اجتاز التحقق)' : ''));
+  renderLiveList();
+  refreshHeaderStats();
+  return true;
+}
+
+function renderLiveList(){
+  const students = getStudents();
+  const records = getAttendance();
+  document.getElementById('livePresentCount').textContent = records.length;
+  document.getElementById('liveAbsentCount').textContent = Math.max(students.length - records.length, 0);
+  document.getElementById('livePercent').textContent = students.length ? Math.round(records.length/students.length*100)+'%' : '0%';
+  const wrap = document.getElementById('liveList');
+  if(records.length === 0){ wrap.innerHTML = '<div class="empty">لم يُسجَّل أي حضور بعد</div>'; return; }
+  wrap.innerHTML = records.slice().reverse().map(r => {
+    const s = students.find(x=>x.id===r.studentId);
+    return `<div class="student-card">
+      ${s ? `<span aria-label="لا تُخزن صورة الوجه">👤</span>` : ''}
+      <div class="info"><div class="name">${escapeHtml(r.name)}</div><div class="meta">${escapeHtml(r.sid||'—')} · ${methodLabel(r.method)}</div></div>
+      <span class="pill pill-present">${r.time}</span>
+    </div>`;
+  }).join('');
+}
+
+/* Manual attendance fallback */
+function refreshManualSelect(){
+  const students = getStudents();
+  const sel = document.getElementById('manualSelect');
+  sel.innerHTML = students.map(s => `<option value="${s.id}">${escapeHtml(s.name)} ${s.studentId? '— '+escapeHtml(s.studentId):''}</option>`).join('');
+  renderLiveList();
+}
+document.getElementById('btnManualAdd').addEventListener('click', ()=>{
+  const id = document.getElementById('manualSelect').value;
+  const student = getStudents().find(s => s.id === id);
+  if(!student){ showToast('اختر طالباً أولاً', true); return; }
+  let records = getAttendance();
+  if(records.find(r=>r.studentId===student.id)){ showToast('الطالب مسجَّل حضوره بالفعل', true); return; }
+  records.push({ studentId: student.id, name: student.name, sid: student.studentId, time: new Date().toLocaleTimeString('ar-IQ') + ' (يدوي)', method: 'manual' });
+  setAttendance(records);
+  showToast('تم تسجيل الحضور يدوياً: ' + student.name);
+  renderLiveList(); refreshHeaderStats();
+});
+
+document.getElementById('courseName').addEventListener('change', ()=>{ renderLiveList(); renderReport(); });
+
+/* ===================== Report ===================== */
+function renderReport(){
+  const students = getStudents();
+  const records = getAttendance();
+  const presentIds = new Set(records.map(r=>r.studentId));
+  document.getElementById('repTotal').textContent = students.length;
+  document.getElementById('repPresent').textContent = records.length;
+  document.getElementById('repAbsent').textContent = Math.max(students.length - records.length, 0);
+  document.getElementById('repPercent').textContent = students.length ? Math.round(records.length/students.length*100)+'%' : '0%';
+
+  const tbody = document.getElementById('reportTable');
+  if(students.length === 0){
+    tbody.innerHTML=''; document.getElementById('reportEmpty').style.display='block'; return;
+  }
+  document.getElementById('reportEmpty').style.display='none';
+  tbody.innerHTML = students.map((s,i) => {
+    const rec = records.find(r=>r.studentId===s.id);
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${escapeHtml(s.name)}</td>
+      <td>${escapeHtml(s.studentId||'—')}</td>
+      <td>${rec ? '<span class="pill pill-present">حاضر</span>' : '<span class="pill pill-absent">غائب</span>'}</td>
+      <td>${rec ? rec.time : '—'}</td>
+      <td>${rec ? methodLabel(rec.method) : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+document.getElementById('btnExportWord').addEventListener('click', ()=>{
+  const students = getStudents();
+  if(students.length === 0){ showToast('لا يوجد طلبة لتصديرهم', true); return; }
+  const records = getAttendance();
+  const courseName = document.getElementById('courseName').value.trim() || '—';
+  const instructorName = document.getElementById('instructorName').value.trim() || '—';
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('ar-IQ', {year:'numeric', month:'long', day:'numeric'});
+  const timeStr = pad2(now.getHours())+':'+pad2(now.getMinutes())+':'+pad2(now.getSeconds());
+  const presentCount = records.length;
+  const absentCount = students.length - records.length;
+  const percent = students.length ? Math.round(records.length/students.length*100) : 0;
+
+  const rowsHtml = students.map((s,i) => {
+    const rec = records.find(r=>r.studentId===s.id);
+    return `<tr>
+      <td style="text-align:center;">${i+1}</td>
+      <td>${escapeHtml(s.name)}</td>
+      <td style="text-align:center;">${escapeHtml(s.studentId||'—')}</td>
+      <td style="text-align:center; font-weight:bold; color:${rec?'#00968A':'#C0392B'};">${rec ? 'حاضر' : 'غائب'}</td>
+      <td style="text-align:center;">${rec ? rec.time : '—'}</td>
+      <td style="text-align:center;">${rec ? methodLabel(rec.method) : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  const html = `
+  <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+  <head><meta charset="utf-8">
+  <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
+  <style>
+    body{ font-family:Arial, sans-serif; direction:rtl; color:#1E2761; }
+    h1{ text-align:center; font-size:20px; color:#1E2761; margin-bottom:4px; }
+    h2{ text-align:center; font-size:14px; color:#00968A; margin-top:0; font-weight:normal; }
+    table.info{ width:100%; margin:16px 0; border-collapse:collapse; }
+    table.info td{ padding:6px 10px; font-size:13px; }
+    table.info td.label{ font-weight:bold; width:120px; }
+    table.stats{ width:100%; text-align:center; margin-bottom:18px; border-collapse:collapse; }
+    table.stats td{ border:1px solid #CADCFC; padding:8px; font-size:13px; }
+    table.stats td.num{ font-size:16px; font-weight:bold; color:#1E2761; }
+    table.main{ width:100%; border-collapse:collapse; font-size:13px; }
+    table.main th{ background:#1E2761; color:#fff; padding:8px; text-align:center; }
+    table.main td{ border:1px solid #CADCFC; padding:7px 10px; text-align:right; }
+    table.main tr:nth-child(even) td{ background:#F5F8FE; }
+    .footer{ margin-top:24px; font-size:11px; color:#6B7280; text-align:center; }
+  </style>
+  </head>
+  <body>
+    <h1>قسم إدارة الأعمال - كلية الإدارة والاقتصاد</h1>
+    <h2>العام الدراسي 2026-2027 — الكورس الأول</h2>
+    <table class="info">
+      <tr><td class="label">اسم المادة:</td><td>${escapeHtml(courseName)}</td><td class="label">اسم الأستاذ:</td><td>${escapeHtml(instructorName)}</td></tr>
+      <tr><td class="label">التاريخ:</td><td>${dateStr}</td><td class="label">الوقت:</td><td>${timeStr}</td></tr>
+    </table>
+    <table class="stats">
+      <tr>
+        <td class="num">${students.length}<br><span style="font-weight:normal; font-size:11px;">إجمالي الطلبة</span></td>
+        <td class="num" style="color:#00968A;">${presentCount}<br><span style="font-weight:normal; font-size:11px;">الحاضرون</span></td>
+        <td class="num" style="color:#C0392B;">${absentCount}<br><span style="font-weight:normal; font-size:11px;">الغائبون</span></td>
+        <td class="num">${percent}%<br><span style="font-weight:normal; font-size:11px;">نسبة الحضور</span></td>
+      </tr>
+    </table>
+    <table class="main">
+      <thead><tr><th>ت</th><th>الاسم</th><th>الرقم الجامعي</th><th>الحالة</th><th>وقت التسجيل</th><th>طريقة التحقق</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+    <div class="footer">تم إنشاء هذا التقرير آلياً بواسطة نظام "سجلّ" لتسجيل الحضور بالتعرف على الوجه</div>
+  </body></html>`;
+
+  const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const safeCourse = courseName.replace(/[\\/:*?"<>|]/g,'-');
+  a.download = `تقرير_الحضور_${todayStr()}_${safeCourse}.doc`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  showToast('تم تصدير تقرير Word بنجاح 📄');
+});
+
+document.getElementById('btnPrint').addEventListener('click', ()=> window.print());
+
+document.getElementById('btnResetSession').addEventListener('click', ()=>{
+  if(!confirm('سيتم حذف سجل حضور هذه الجلسة فقط (بيانات الطلبة تبقى محفوظة). متابعة؟')) return;
+  setAttendance([]);
+  renderReport(); renderLiveList(); refreshHeaderStats();
+  showToast('تم تصفير جلسة الحضور');
+});
+
+/* ===================== Settings / Backup ===================== */
+async function backupKey(password,salt){
+ const seed=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveKey']);
+ return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:310000,hash:'SHA-256'},seed,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+document.getElementById('btnBackup').addEventListener('click',async()=>{
+ try{
+ const password=prompt('كلمة مرور للنسخة المشفرة 12 محرفاً على الأقل. احفظها منفصلة عن الملف.');if(!password)return;if(password.length<12)throw Error('كلمة المرور قصيرة');
+ const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+ const records=Object.fromEntries(Object.keys(localStorage).filter(k=>k.startsWith('sijill_')).map(k=>[k,localStorage.getItem(k)]));
+ const key=await backupKey(password,salt);const data=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(JSON.stringify(records)));
+ const blob=new Blob([JSON.stringify({schema:'sijill-aesgcm-v1',salt:[...salt],iv:[...iv],data:[...new Uint8Array(data)]})],{type:'application/json'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='sijill_encrypted_backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ }catch(e){showToast('تعذر النسخ المشفر: '+e.message,true);}
+});
+document.getElementById('btnRestore').addEventListener('click',()=>document.getElementById('restoreInput').click());
+document.getElementById('restoreInput').addEventListener('change',async e=>{
+ try{
+ const file=e.target.files[0];if(!file)return;if(file.size>25000000)throw Error('ملف أكبر من الحد');
+ const pack=JSON.parse(await file.text());if(pack.schema!=='sijill-aesgcm-v1')throw Error('تقبل هذه النسخة النسخ المشفرة الجديدة فقط');
+ const password=prompt('كلمة مرور النسخة');if(!password)return;
+ const key=await backupKey(password,new Uint8Array(pack.salt));
+ const clear=await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(pack.iv)},key,new Uint8Array(pack.data));
+ const records=JSON.parse(new TextDecoder().decode(clear));
+ for(const [k,v] of Object.entries(records)){if(!k.startsWith('sijill_')||typeof v!=='string')throw Error('مفتاح غير صالح');JSON.parse(v);}
+ const students=JSON.parse(records[LS_STUDENTS]||'[]');
+ if(!Array.isArray(students)||students.some(s=>typeof s.id!=='string'||!/^st_[a-zA-Z0-9-]+$/.test(s.id)||typeof s.name!=='string'||!Array.isArray(s.descriptor)||s.descriptor.length!==128||s.descriptor.some(n=>!Number.isFinite(n))))throw Error('بيانات طلبة غير صالحة');
+ if(!confirm('استبدال جميع بيانات سجلّ الحالية بالنسخة المشفرة؟'))return;
+ stopCamera();const previous=Object.fromEntries(Object.keys(localStorage).filter(k=>k.startsWith('sijill_')).map(k=>[k,localStorage.getItem(k)]));
+ try{Object.keys(previous).forEach(k=>localStorage.removeItem(k));Object.entries(records).forEach(([k,v])=>localStorage.setItem(k,v));}catch(e){Object.keys(records).forEach(k=>localStorage.removeItem(k));Object.entries(previous).forEach(([k,v])=>localStorage.setItem(k,v));throw e;}
+ location.reload();
+ }catch(e){showToast('تعذرت الاستعادة أو كلمة المرور خاطئة: '+e.message,true);}
+ e.target.value='';
+});
+
+document.getElementById('btnDeleteAll').addEventListener('click', ()=>{
+  if(!confirm('سيتم حذف جميع بيانات الطلبة وسجلات الحضور نهائياً. هل أنت متأكد؟')) return;
+  setStudents([]);
+  Object.keys(localStorage).filter(k=>k.startsWith(LS_ATTEND_PREFIX)).forEach(k=>localStorage.removeItem(k));
+  refreshStudentsList(); refreshHeaderStats(); refreshManualSelect(); renderReport(); renderLiveList();
+  showToast('تم حذف جميع البيانات');
+});
+
+/* ===================== Header stats ===================== */
+function refreshHeaderStats(){
+  document.getElementById('hdrTotal').textContent = getStudents().length;
+  document.getElementById('hdrPresent').textContent = getAttendance().length;
+}
+
+/* init */
+renderLiveList();
+renderReport();
+renderLiveStats();
+
+// Sijill research instrumentation v2. One operator-started trial is one row.
+const RESEARCH_KEY='sijill_research_v2';
+let researchTrial=null, researchTimer=null, manualStart=null;
+const rv=id=>document.getElementById(id).value.trim();
+function csvCell(v){let t=String(v??'');if(/^[\s]*[=+@-]/.test(t))t="'"+t;return '"'+t.replace(/"/g,'""')+'"';}
+function researchRows(){return JSON.parse(localStorage.getItem(RESEARCH_KEY)||'[]');}
+function researchSave(row){const a=researchRows();a.push(row);localStorage.setItem(RESEARCH_KEY,JSON.stringify(a));}
+function researchLock(lock){['threshold','livenessOn','livenessMode','testCondition','rSession','rSubject','rTruth','rExpected','rCondition','rLux','rDistance','rAngle','rDevice','rStart'].forEach(id=>document.getElementById(id).disabled=lock);}
+function researchFinish(predicted,reason){
+ if(!researchTrial)return;
+ const t=researchTrial;researchTrial=null;clearTimeout(researchTimer);
+ const accepted=!!predicted;
+ let outcome=t.truth==='genuine'?(accepted?(predicted===t.expected?'correct_accept':'wrong_identity'):'false_reject'):(accepted?'false_accept':'correct_reject');
+ if(reason==='aborted'||reason==='multiple_faces'||reason==='technical_error')outcome='invalid';
+ const {start,...row}=t;
+ researchSave({...row,end_utc:new Date().toISOString(),duration_ms:Math.round(performance.now()-start),predicted_id:predicted,accepted:accepted?1:0,reason,outcome});
+ resetLivenessStates();researchLock(false);document.getElementById('rStatus').textContent='تم حفظ المحاولة '+outcome+' — '+reason;
+}
+function researchObserve(detections,inferenceMs){
+ if(!researchTrial)return;
+ const t=researchTrial;t.frames++;t.inference_total_ms+=inferenceMs;
+ if(detections.length>1){researchFinish('','multiple_faces');return;}
+ if(!detections.length)return;
+ const students=getStudents(),d=detections[0].descriptor;let nearest=null,best=Infinity;
+ const matchStart=performance.now();
+ for(const s of students){const distance=faceapi.euclideanDistance(d,new Float32Array(s.descriptor));if(distance<best){best=distance;nearest=s;}}
+ t.match_total_ms+=performance.now()-matchStart;t.detected_frames++;
+ if(Number.isFinite(best)&&best<t.min_distance){t.min_distance=best;t.nearest_id=nearest.id;}
+ // No liveness: the first detectable probe makes the decision. With liveness,
+ // acceptance is emitted only by finishAttempt after an identity-bound challenge.
+ if(!t.liveness_enabled){researchFinish(best<t.threshold?nearest.id:'',best<t.threshold?'distance_accept':'distance_reject');}
+}
+document.getElementById('rStart').onclick=()=>{
+ if(!loopActive||testCondition()==='normal'){showToast('شغّل الكاميرا واختر وضع تجربة أولاً',true);return;}
+ if(!rv('rSubject')||!rv('rSession')||!rv('rDevice')){showToast('أدخل رموز المشارك والجلسة والجهاز',true);return;}
+ const truth=rv('rTruth'),expected=rv('rExpected');
+ if(truth==='genuine'&&!expected){showToast('اختر الهوية الصحيحة',true);return;}
+ if(truth==='unknown'&&expected){showToast('غير المسجل يجب ألا تكون له هوية في القائمة',true);return;}
+ resetLivenessStates();
+ researchTrial={trial_id:crypto.randomUUID(),version:'2.0',session:rv('rSession'),subject:rv('rSubject'),truth,expected,condition:rv('rCondition'),lux:rv('rLux'),distance_m:rv('rDistance'),angle_deg:rv('rAngle'),device:rv('rDevice'),browser:navigator.userAgent,start_utc:new Date().toISOString(),start:performance.now(),threshold:Number(rv('threshold')),liveness_enabled:livenessEnabled()?1:0,liveness_mode:rv('livenessMode'),gallery_size:getStudents().length,enrolment_images_per_identity:1,width:document.getElementById('attendVideo').videoWidth,height:document.getElementById('attendVideo').videoHeight,frames:0,detected_frames:0,min_distance:Infinity,nearest_id:'',inference_total_ms:0,match_total_ms:0};
+ researchLock(true);document.getElementById('rStatus').textContent='المحاولة نشطة — أدخل الوجه الآن';
+ researchTimer=setTimeout(()=>researchFinish('',researchTrial?.detected_frames?'deadline_reject':'no_face'),15000);
+};
+document.getElementById('rAbort').onclick=()=>researchFinish('','aborted');
+document.getElementById('rExport').onclick=()=>{
+ const rows=researchRows();if(!rows.length)return showToast('لا توجد نتائج',true);
+ const head=[...new Set(rows.flatMap(r=>Object.keys(r)))];
+ const csv=[head,...rows.map(r=>head.map(k=>Number.isFinite(r[k])||typeof r[k]!=='number'?r[k]:''))].map(r=>r.map(csvCell).join(',')).join('\r\n');
+ const url=URL.createObjectURL(new Blob(['\ufeff',csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='sijill_research.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+document.getElementById('rManualStart').onclick=()=>{if(manualStart)return;manualStart={start:performance.now(),session:rv('rSession'),start_utc:new Date().toISOString()};showToast('بدأ توقيت النداء حتى اكتمال السجل');};
+document.getElementById('rManualEnd').onclick=()=>{if(!manualStart)return;researchSave({trial_id:crypto.randomUUID(),kind:'manual_session',session:manualStart.session,start_utc:manualStart.start_utc,duration_ms:Math.round(performance.now()-manualStart.start),outcome:'timing_only'});manualStart=null;showToast('حُفظ زمن الجلسة اليدوية');};
+document.getElementById('rDelete').onclick=()=>{if(!confirm('حذف الطلبة والحضور والتجارب والنسخ المحلية لسجلّ؟ لا يحذف الملفات المصدرة.'))return;stopCamera();Object.keys(localStorage).filter(k=>k.startsWith('sijill_')).forEach(k=>localStorage.removeItem(k));location.reload();};
+function researchRefresh(){const select=document.getElementById('rExpected');const old=select.value;select.innerHTML='<option value="">غير مسجل</option>'+getStudents().map(s=>'<option value="'+escapeHtml(s.id)+'">'+escapeHtml(s.name)+'</option>').join('');select.value=old;}
+document.getElementById('rExpected').onfocus=researchRefresh;
+researchRefresh();
+window.addEventListener('pagehide',()=>{if(researchTrial)researchFinish('','aborted');});
+
+</script>
+</body>
+</html>

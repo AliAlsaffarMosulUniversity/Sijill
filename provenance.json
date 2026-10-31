@@ -1,0 +1,37 @@
+[
+  {
+    "source": "work\\سجل_مع_التحقق_من_الحيوية.html",
+    "bytes": 59223,
+    "sha256": "a396c37ec4eb7f427148c2653f7adf65a5e3255aa2ab7cd3bd9847a9ccf66ee5"
+  },
+  {
+    "source": "work\\Sijill_paper_revised.docx",
+    "bytes": 518625,
+    "sha256": "30251382f628d78ae0d552ea59b4e50ebc15282ca10831cb2e1175d86ad77dfb"
+  },
+  {
+    "source": "work\\تقييم البحث.docx",
+    "bytes": 538099,
+    "sha256": "6e4801c868a1ed19ef635af65b1c398b9fc9829e52ec61d297d3c3e3ba67750c"
+  },
+  {
+    "source": "work\\Review Report(1).docx",
+    "bytes": 15876,
+    "sha256": "ba36dd3b2f364a3fcc10a74e8542a5b1e29cd45474ad3948eaf71f98ffe8ec40"
+  },
+  {
+    "source": "work\\claude\\src\\index.html",
+    "bytes": 39778,
+    "sha256": "9052107166b64e927c6ec6b3bc7e9ec58156148e70fe60e3cf8790fafd860e12"
+  },
+  {
+    "source": "work\\claude\\docs\\Manuscript_submitted.docx",
+    "bytes": 538099,
+    "sha256": "6e4801c868a1ed19ef635af65b1c398b9fc9829e52ec61d297d3c3e3ba67750c"
+  },
+  {
+    "source": "work\\claude\\docs\\Review_Report.docx",
+    "bytes": 15876,
+    "sha256": "ba36dd3b2f364a3fcc10a74e8542a5b1e29cd45474ad3948eaf71f98ffe8ec40"
+  }
+]
