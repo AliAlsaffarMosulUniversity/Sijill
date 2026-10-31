@@ -36,3 +36,10 @@
 لم تنفذ مشاركة بشرية، أو كاميرا على وجوه فعلية، أو اختبارات طباعة وشاشة وفيديو حقيقية، أو قياسات lux، أو مقارنة زمنية يدوية، أو فحص توسع المعرض، أو اختبار أمان اختراق مستقل. لم يثبت انعدام تسرب البيانات أو مقاومة PAD معيارية. لم يختبر فقد الطاقة أثناء الكتابة أو امتلاء كل أنواع التخزين أو جميع المتصفحات والأجهزة. اختبار التشفير المباشر لا يغطي كل حالات استيراد النسخ الاحتياطية أو اختراق حساب الجهاز.
 
 كل هذه البنود تتطلب التنفيذ وفق البروتوكول وتسجيل النتائج، ولا تستنتج من مرور الاختبارات البرمجية.
+
+
+## PWA revision 2.1.0-research
+
+Added a scoped service worker, manifest, 192/512 PNG icons, Apple touch icon, Arabic installation/recovery instructions and a 15-resource completeness indicator. Static worker-logic checks passed: complete-cache report, offline shell/library/model cache responses, scope-specific old-cache cleanup, exclusion of non-static/private files, cross-origin and non-GET exclusion, incomplete-cache detection, manifest scope/start URL and PNG dimensions. All application scripts pass syntax compilation. These are software checks with a simulated worker environment.
+
+The end-to-end offline reload test is supplied as tests/test_pwa.cjs. Its local execution could not start Edge in the current restricted environment; no successful end-to-end offline run is claimed here. The prior 2.0.0 browser decision-path tests remain historical evidence for the unchanged recognition logic. Physical Android/iOS/desktop installation, offline camera capture and cross-device encrypted-backup recovery remain operational validation tasks in the Arabic protocol. No participant accuracy, spoof resistance, universal compatibility or device-loss recovery results have been fabricated.

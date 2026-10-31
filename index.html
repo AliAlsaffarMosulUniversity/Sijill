@@ -126,13 +126,23 @@
   .sec-h{font-size:15px; margin:14px 0 4px;}
   .footer-note{text-align:center; font-size:12px; color:var(--gray); margin-top:20px;}
 </style>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1E2761">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<script src="pwa.js" defer></script>
+<style>
+.install-strip{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 28px;background:#fff;border-bottom:1px solid #dbe3f0;font-size:13px}.install-strip p{margin:0;flex:1;min-width:220px}.install-strip small{display:block;margin-top:5px;color:#475569}#installHelp{max-width:650px;width:calc(100% - 32px);border:0;border-radius:14px;padding:24px;color:#1E2761;font:inherit;line-height:1.8}#installHelp::backdrop{background:rgba(10,20,45,.6)}#installHelp li{margin-block:9px}#installHelp h2{margin-top:0}button:disabled{cursor:default;opacity:.65}@media(max-width:600px){header{padding:16px;flex-wrap:wrap;gap:16px}header .row{gap:10px!important}.install-strip{padding:12px 16px}nav.tabs{padding:10px;position:static}nav.tabs button{font-size:12px;padding:10px}main{padding:16px 10px}.card{padding:16px}.row{flex-wrap:wrap}video,canvas{max-width:100%}table{min-width:0}input,select{max-width:100%}}
+</style>
 </head>
 <body>
 
 <div id="loadingOverlay">
   <div class="spinner"></div>
   <div>جارٍ تحميل نماذج الذكاء الاصطناعي...</div>
-  <div style="font-size:12px; color:#CADCFC;">يتطلب اتصالاً بالإنترنت أول مرة فقط</div>
+  <div style="font-size:12px; color:#CADCFC;">أول مرة: انتظر اكتمال تحميل النماذج وحفظ ملفات التشغيل</div>
 </div>
 
 <header>
@@ -162,6 +172,8 @@
   <button data-tab="settings">الإعدادات والنسخ الاحتياطي</button>
 </nav>
 
+<div class="install-strip"><button id="installApp" class="btn btn-primary" type="button">تثبيت التطبيق</button><button id="installationGuide" class="btn" type="button">طريقة التثبيت وحماية البيانات</button><p><span id="networkState"></span><small id="offlineState" role="status" aria-live="polite">جارٍ فحص جاهزية العمل دون إنترنت…</small></p></div>
+<dialog id="installHelp" aria-labelledby="installHelpTitle"><h2 id="installHelpTitle">تثبيت سجلّ والعمل دون إنترنت</h2><ul><li><b>Android:</b> افتح الرابط في Chrome ثم اضغط «تثبيت التطبيق» أو اختر «تثبيت التطبيق/إضافة إلى الشاشة الرئيسية» من قائمة المتصفح.</li><li><b>iPhone وiPad:</b> افتح الرابط في Safari، ثم «مشاركة» ← «إضافة إلى الشاشة الرئيسية»، وفعّل «فتح كتطبيق ويب» إذا ظهر الخيار.</li><li><b>Windows وmacOS وLinux:</b> افتح الرابط في Chrome أو Edge واختر التثبيت من شريط العنوان أو قائمة المتصفح. في Safari الداعم على Mac استخدم «إضافة إلى Dock».</li></ul><p>يعتمد التثبيت والكاميرا على دعم الجهاز والمتصفح؛ الأجهزة والمتصفحات القديمة غير مضمونة. يمكن استخدام الرابط في المتصفح المتوافق إذا لم يتوفر التثبيت.</p><p><b>دون إنترنت:</b> انتظر ظهور «جاهز للعمل دون إنترنت» أول مرة، ثم افتح التطبيق من الأيقونة أو الرابط نفسه. يلزم تحميل جديد بعد مسح بيانات الموقع أو على جهاز آخر. لا تعتمد على التصفح الخاص.</p><p><b>مكان التخزين:</b> بيانات الطلبة وسمات الوجه والحضور والتجارب محفوظة في تخزين المتصفح المحلي على هذا الجهاز؛ لا تُرفع إلى GitHub. ملفات التطبيق والنماذج محفوظة في ذاكرة تخزين مؤقت منفصلة. بيانات كل جهاز مستقلة ولا توجد مزامنة تلقائية.</p><p><b>عند فقد الجهاز:</b> من الإعدادات صدّر نسخة احتياطية مشفرة واحفظها خارج الجهاز في مكان آمن، واحفظ كلمة مرورها بشكل مستقل. على الجهاز البديل افتح التطبيق واستورد النسخة. لا يمكن استرجاع البيانات المحلية دون نسخة محفوظة وكلمة مرورها. فعّل قفل الجهاز وتشفير القرص؛ التخزين المحلي أثناء الاستخدام غير مشفر بواسطة التطبيق.</p><button id="closeInstallHelp" class="btn btn-primary" type="button">إغلاق</button></dialog>
 <main>
 
   <!-- ============ TAB 1: ENROLLMENT ============ -->
